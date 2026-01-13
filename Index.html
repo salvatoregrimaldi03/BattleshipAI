@@ -2,21 +2,30 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Labirinto AI</title>
+<title>Labirinto</title>
 <link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
 
-<h1>🧠 Labirinto con Intelligenza Artificiale</h1>
+<h1>🧠 Labirinto</h1>
 
 <div id="controls">
-    <button onclick="runBFS()">BFS</button>
-    <button onclick="runDFS()">DFS</button>
-    <button onclick="runAStar()">A*</button>
-    <span id="stats"></span>
+    <button onclick="runBFS()">Esegui BFS</button>
+    <button onclick="runDFS()">Esegui DFS</button>
+    <button onclick="runAStar()">Esegui A*</button>
+    <button onclick="runBestFirstRec()">Esegui Best-First Ricorsiva</button>
+    <label style="margin-left:20px;">
+        <input type="checkbox" id="ai-controlled">
+        AI Controlled
+    </label>
 </div>
 
+<div id="best-path-msg" class="hidden"></div>
 <div id="maze"></div>
+<div id="history"><h3>Storico nodi esplorati:</h3></div>
+<div id="explanation"></div>
 
 <script src="script.js"></script>
 </body>
