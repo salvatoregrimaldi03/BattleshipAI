@@ -212,15 +212,33 @@ function updateHistory(alg, visitedLen, pathLen){
 }
 
 function updateBestPath(){
-    let best=null, len=Infinity;
+    let bestAlg = null;
+    let bestPathLen = Infinity;
+    let bestVisited = Infinity;
+
     for(let k in results){
-        if(results[k].length>0 && results[k].length<len){
-            len=results[k].length;
-            best=k;
+        const r = results[k];
+        if(!r.path || r.path.length === 0) continue;
+
+        const pathLen = r.path.length;
+        const visitedLen = r.visited;
+
+        // 1) percorso più corto
+        if(pathLen < bestPathLen){
+            bestPathLen = pathLen;
+            bestVisited = visitedLen;
+            bestAlg = k;
+        }
+        // 2) parità di lunghezza → meno nodi esplorati
+        else if(pathLen === bestPathLen && visitedLen < bestVisited){
+            bestVisited = visitedLen;
+            bestAlg = k;
         }
     }
-    if(best){
-        bestPathMsg.innerText=`🏆 Percorso migliore (min lunghezza): ${best} (${len})`;
+
+    if(bestAlg){
+        bestPathMsg.innerText =
+            `🏆 Percorso migliore: ${bestAlg} (lunghezza ${bestPathLen}, nodi esplorati ${bestVisited})`;
         bestPathMsg.classList.remove("hidden");
     }
 }
@@ -232,7 +250,12 @@ async function runAlgo(name, solver, vClass, pClass){
     const res = await solver();
     await animate(res.path,res.visited,vClass,pClass);
     updateHistory(name,res.visited.length,res.path.length);
-    results[name]={path:res.path,length:res.path.length};
+    results[name] = {
+    path: res.path,
+    length: res.path.length,
+    visited: res.visited.length
+};
+
     updateBestPath();
 }
 
