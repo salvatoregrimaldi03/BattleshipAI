@@ -183,26 +183,31 @@ function updateBestPath(){
 }
 
 // =================== ESECUZIONE ALGORITMI ===================
-async function runAlgo(name, solver, vClass, pClass){
+async function runAlgo(name, solver, vClass, pClass, suppressBest = false){
     drawMaze();
     const res = await solver();
     await animate(res.path,res.visited,vClass,pClass);
     updateHistory(name,res.visited.length,res.path.length);
     results[name] = { path: res.path, length: res.path.length, visited: res.visited.length };
-    updateBestPath();
+    if(!suppressBest){
+        updateBestPath();
+    }
 }
 
 async function runAllAlgorithmsAI(){
     results = {};
     bestPathMsg.classList.add("hidden");
 
-    await runAlgo("BFS", bfsSolve, "visited-bfs", "path-bfs");
+    await runAlgo("BFS", bfsSolve, "visited-bfs", "path-bfs", true);
     await sleep(400);
-    await runAlgo("DFS", dfsSolve, "visited-dfs", "path-dfs");
+    await runAlgo("DFS", dfsSolve, "visited-dfs", "path-dfs", true);
     await sleep(400);
-    await runAlgo("A*", aStarSolve, "visited-astar", "path-astar");
+    await runAlgo("A*", aStarSolve, "visited-astar", "path-astar", true);
     await sleep(400);
-    await runAlgo("Best-First (Ric.)", bestFirstRecursiveSolve, "visited-best", "path-best");
+    await runAlgo("Best-First (Ric.)", bestFirstRecursiveSolve, "visited-best", "path-best", true);
+
+    // Solo ora mostriamo il miglior percorso (dopo tutte e 4 le esecuzioni)
+    updateBestPath();
 }
 
 // =================== AI CONTROLLED ===================
@@ -228,4 +233,5 @@ aiCheckbox.addEventListener("change", async (e) => {
         finally{ aiRunning = false; toggleButtons(false); }
     }
 });
+
 
