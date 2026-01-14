@@ -18,4 +18,7 @@
    ```bash
    cd LabirintoIA
    ```
-3. Starting Index.html with the command start
+3. Starting Index.html with the command start:
+   ```bash
+   start Index.html
+   ```
