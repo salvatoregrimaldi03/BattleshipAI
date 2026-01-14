@@ -9,6 +9,15 @@
 - **Ciro Esposito** - [CiroEsposito](https://github.com/ciroesposito04)
 - **Lorenzo Di Riso** - [LorenzoDiRiso](https://github.com/ldiriso4)
 
+
+## Project Objective & Resources 💡
+**LabirintoIA** is an interactive demo designed to analyze and visualize the performance of search algorithms within a deterministic, static grid environment. The project's primary objective is to benchmark uninformed strategies (BFS, DFS) against informed heuristics (A*, Recursive Best-First Search using Manhattan Distance) to demonstrate the efficiency of AI-driven pathfinding in minimizing node exploration and optimizing path costs. 
+The repository resources include:
+- **index.html**: defines the interactive web interface structure;
+- **script.js**: manages the core logic and algorithm execution;
+- **style.css**: handles the visual styling of the demo;
+- **LogoLabirintoIA2.png**: representing the project's official logo.
+
 ## 🚀 How to try it?
 1. Clone the repository:
    ```bash
