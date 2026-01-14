@@ -216,7 +216,8 @@ function isAIControlled(){ return document.getElementById("ai-controlled").check
 window.runBFS = async () => { if(isAIControlled()) await runAllAlgorithmsAI(); else await runAlgo("BFS", bfsSolve, "visited-bfs", "path-bfs"); };
 window.runDFS = async () => { if(isAIControlled()) await runAllAlgorithmsAI(); else await runAlgo("DFS", dfsSolve, "visited-dfs", "path-dfs"); };
 window.runAStar = async () => { if(isAIControlled()) await runAllAlgorithmsAI(); else await runAlgo("A*", aStarSolve, "visited-astar", "path-astar"); };
-window.runBestFirstRec = async () => { if(isAIControlled()) await runAllAlgorithmsAI(); else await runAlgo("Best-First (Ric.)", bestFirstRecursiveSolve, "visited-best", "path-best"); };
+window.runBestFirstRec = async () => { if(isAIControlled()) await runAllAlgorithmsAI(); else await runAlgo("RBFS", bestFirstRecursiveSolve, "visited-best", "path-best"); };
+
 
 function toggleButtons(disabled){
     document.querySelectorAll("#controls button").forEach(b => b.disabled = disabled);
@@ -233,6 +234,7 @@ aiCheckbox.addEventListener("change", async (e) => {
         finally{ aiRunning = false; toggleButtons(false); }
     }
 });
+
 
 
 
