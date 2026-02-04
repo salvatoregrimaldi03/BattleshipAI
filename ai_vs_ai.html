@@ -14,9 +14,7 @@
             <div class="system-status">SIMULAZIONE: <span id="sim-status">FERMA</span> | TURNI: <span id="sim-turn">0</span></div>
         </header>
 
-        <!-- TOP CONTROLS: sinistra (IA_A) | centro (global) | destra (IA_B) -->
         <div class="top-controls">
-            <!-- LEFT: controlli IA_A -->
             <div class="top-col top-left">
                 <div class="col-title">IA_A</div>
                 <label class="small-label">LOGICA IA_A</label>
@@ -32,19 +30,22 @@
                 </div>
             </div>
 
-            <!-- CENTER: controlli globali della simulazione -->
             <div class="top-col top-center">
                 <div class="col-title">COMANDI SIMULAZIONE</div>
                 <div class="center-buttons">
                     <button class="btn-neon" id="start-btn">AVVIA SIMULAZIONE</button>
                     <button class="btn-neon" id="pause-btn">PAUSA</button>
-                    <button class="btn-reset" id="reset-btn">RESET SIMULAZIONE</button>
-                    <button class="btn-neon" id="back-btn" onclick="window.location.href='Index.html'">TORNA A INTERFACCIA</button>
+                    <button class="btn-reset" id="reset-btn">RESET</button>
+                    
+                    <button class="btn-neon" style="border-color: #ffee00; color: #ffee00; opacity: 0.8;" onclick="window.location.href='report.html'">ULTIMO REPORT</button>
+                    
+                    <button class="btn-neon" id="btn-new-report" style="display:none; background: rgba(255, 238, 0, 0.1); border-color:#ffee00; color:#ffee00; font-weight:bold;" onclick="window.location.href='report.html'">NUOVO REPORT PRONTO!</button>
+                    
+                    <button class="btn-neon" id="back-btn" onclick="window.location.href='index.html'">TORNA HOME</button>
                 </div>
                 <div class="center-note">Scegli le logiche su entrambi i lati prima di avviare.</div>
             </div>
 
-            <!-- RIGHT: controlli IA_B -->
             <div class="top-col top-right">
                 <div class="col-title">IA_B</div>
                 <label class="small-label">LOGICA IA_B</label>
@@ -60,7 +61,6 @@
                 </div>
             </div>
         </div>
-        <!-- /TOP CONTROLS -->
 
         <div class="war-room" style="margin-top:6px;">
             <div class="board-wrapper">
@@ -76,7 +76,6 @@
             </div>
         </div>
 
-        <!-- Due console affiancate -->
         <div class="console-row" style="margin-top:18px;">
             <div class="console-wrapper console-left">
                 <div class="console-header">IA_A_CONSOLE &gt;_</div>
