@@ -44,6 +44,18 @@ function logSim(msg, target = 'A', type = 'info') {
     }
 }
 
+// ---------------- HELPERS UI ----------------
+function setLogicLocked(locked) {
+    const iaA = document.getElementById('iaA-select');
+    const iaB = document.getElementById('iaB-select');
+    if (iaA) iaA.disabled = locked;
+    if (iaB) iaB.disabled = locked;
+
+    // opzionale: aggiungi una classe per styling visivo (se vuoi)
+    if (iaA) iaA.classList.toggle('disabled', locked);
+    if (iaB) iaB.classList.toggle('disabled', locked);
+}
+
 // ---------------- INIT & RENDER ----------------
 function resetSim() {
     boardA = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
@@ -72,6 +84,9 @@ function resetSim() {
 
     document.getElementById('sim-console-A').innerHTML = '';
     document.getElementById('sim-console-B').innerHTML = '';
+
+    // alla reset/ripristino, riabilitiamo la scelta della logica
+    setLogicLocked(false);
 
     logSim('Simulazione resettata. Navi piazzate.', 'all', 'info');
 }
@@ -259,6 +274,10 @@ function startSimulation() {
     running = true;
     document.getElementById('sim-status').innerText = 'IN ESECUZIONE';
     logSim('Simulazione avviata.', 'all', 'info');
+
+    // blocchiamo subito la possibilità di cambiare la logica
+    setLogicLocked(true);
+
     runSimulationStep();
 }
 
@@ -267,6 +286,9 @@ function stopSimulation() {
     clearTimeout(simTimeout);
     document.getElementById('sim-status').innerText = 'FERMA';
     logSim('Simulazione fermata.', 'all', 'info');
+
+    // quando la simulazione si ferma (pausa/vittoria/reset), riabilitiamo la scelta della logica
+    setLogicLocked(false);
 }
 
 // ---------------- UI HOOKS ----------------
