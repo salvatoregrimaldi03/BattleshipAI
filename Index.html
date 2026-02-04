@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>BATTLESHIP AI - Tactical Command</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="scanline"></div>
@@ -54,9 +54,13 @@
             <div class="console-header">IA_THOUGHT_PROCESS >_</div>
             <div id="ai-console" class="console-body"></div>
         </div>
-        
-        <button class="btn-reset" onclick="resetGame()">RE-INIZIALIZZA (RESET)</button>
+        <p>
+            <div style="display:flex; gap:10px; justify-content:center; align-items:center;">
+                <button class="btn-reset" onclick="resetGame()">RE-INIZIALIZZA (RESET)</button>
+                <button class="btn-neon" onclick="window.location.href='ai_vs_ai.html'">SIMULA IA vs IA</button>
+            </div>
+        </p>
     </div>
-    <script src="script.js"></script>
+    <script src="js/script.js"></script>
 </body>
 </html>
