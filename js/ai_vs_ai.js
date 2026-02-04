@@ -1,5 +1,5 @@
 // js/ai_vs_ai.js
-// Simulazione Battleship IA vs IA — console private per ogni agente
+// Simulazione Battleship IA vs IA — con sistema di reporting
 
 // ---------------- CONFIG ----------------
 const SIZE = 12;
@@ -21,18 +21,21 @@ let simTimeout = null;
 let stackA = [], stackB = [];
 let showShipsA = false, showShipsB = false;
 
+// OGGETTO STATISTICHE PER REPORT
+let matchStats = {
+    A: { hits: 0, misses: 0, algo: '' },
+    B: { hits: 0, misses: 0, algo: '' }
+};
+
 // ---------------- LOGGING ----------------
-/**
- * logSim(msg, target, type)
- * target: 'A' | 'B' | 'all'
- * type: 'info' | 'warn'
- */
 function logSim(msg, target = 'A', type = 'info') {
     const write = (el) => {
         if (!el) return;
         const d = document.createElement('div');
         d.innerHTML = `&gt; [${new Date().toLocaleTimeString()}] ${msg}`;
         d.className = (type === 'warn') ? 'console-msg-warn' : 'console-msg-info';
+        if(target === 'A') d.style.color = '#6ef0ff'; 
+        if(target === 'B') d.style.color = '#ffb0d1';
         el.prepend(d);
     };
 
@@ -42,18 +45,6 @@ function logSim(msg, target = 'A', type = 'info') {
     if (target === 'B' || target === 'all') {
         write(document.getElementById('sim-console-B'));
     }
-}
-
-// ---------------- HELPERS UI ----------------
-function setLogicLocked(locked) {
-    const iaA = document.getElementById('iaA-select');
-    const iaB = document.getElementById('iaB-select');
-    if (iaA) iaA.disabled = locked;
-    if (iaB) iaB.disabled = locked;
-
-    // opzionale: aggiungi una classe per styling visivo (se vuoi)
-    if (iaA) iaA.classList.toggle('disabled', locked);
-    if (iaB) iaB.classList.toggle('disabled', locked);
 }
 
 // ---------------- INIT & RENDER ----------------
@@ -71,10 +62,20 @@ function resetSim() {
     showShipsA = false;
     showShipsB = false;
 
+    // Reset stats
+    matchStats = {
+        A: { hits: 0, misses: 0, algo: '' },
+        B: { hits: 0, misses: 0, algo: '' }
+    };
+
     clearTimeout(simTimeout);
 
     document.getElementById('sim-status').innerText = 'FERMA';
     document.getElementById('sim-turn').innerText = '0';
+    
+    // Nascondi il bottone "Nuovo Report" quando si resetta
+    const btnNewReport = document.getElementById('btn-new-report');
+    if(btnNewReport) btnNewReport.style.display = 'none';
 
     placeRandomShips(boardA);
     placeRandomShips(boardB);
@@ -84,9 +85,6 @@ function resetSim() {
 
     document.getElementById('sim-console-A').innerHTML = '';
     document.getElementById('sim-console-B').innerHTML = '';
-
-    // alla reset/ripristino, riabilitiamo la scelta della logica
-    setLogicLocked(false);
 
     logSim('Simulazione resettata. Navi piazzate.', 'all', 'info');
 }
@@ -201,9 +199,10 @@ function canFitProb(knowledge, r, c, len, o) {
 
 // ---------------- APPLY SHOT ----------------
 function applyShot(shooter, targetBoard, knowledge, stack) {
-    const logic = document.getElementById(
-        shooter === 'A' ? 'iaA-select' : 'iaB-select'
-    ).value;
+    const selectEl = document.getElementById(shooter === 'A' ? 'iaA-select' : 'iaB-select');
+    const logic = selectEl.value;
+    
+    matchStats[shooter].algo = selectEl.options[selectEl.selectedIndex].text;
 
     let shot;
     if (logic === 'hard') shot = getHardShot(knowledge);
@@ -222,12 +221,14 @@ function applyShot(shooter, targetBoard, knowledge, stack) {
         );
 
         logSim(`COLPITO a [${r},${c}]`, shooter, 'warn');
+        matchStats[shooter].hits++; // STATS
         return true;
     } else {
         if (targetBoard[r][c] === 0) targetBoard[r][c] = 2;
         knowledge[r][c] = 2;
 
         logSim(`ACQUA a [${r},${c}]`, shooter, 'info');
+        matchStats[shooter].misses++; // STATS
         return false;
     }
 }
@@ -248,8 +249,7 @@ function runSimulationStep() {
         hit = applyShot('A', boardB, knowA, stackA);
         renderSimBoard('boardB', boardB, !showShipsB);
         if (checkWin(boardB)) {
-            logSim('IA A VINCE LA SIMULAZIONE!', 'all', 'warn');
-            stopSimulation();
+            finishGame('A');
             return;
         }
         if (!hit) turn = 'B';
@@ -257,15 +257,34 @@ function runSimulationStep() {
         hit = applyShot('B', boardA, knowB, stackB);
         renderSimBoard('boardA', boardA, !showShipsA);
         if (checkWin(boardA)) {
-            logSim('IA B VINCE LA SIMULAZIONE!', 'all', 'warn');
-            stopSimulation();
+            finishGame('B');
             return;
         }
         if (!hit) turn = 'A';
     }
 
     updateCounts();
-    simTimeout = setTimeout(runSimulationStep, hit ? 250 : 450);
+    simTimeout = setTimeout(runSimulationStep, hit ? 150 : 300);
+}
+
+function finishGame(winner) {
+    logSim(`IA ${winner} VINCE LA SIMULAZIONE!`, 'all', 'warn');
+    stopSimulation();
+
+    // Salva Dati
+    const reportData = {
+        winner: winner,
+        turns: simTurnCount,
+        timestamp: new Date().toLocaleString(),
+        stats: matchStats
+    };
+    localStorage.setItem('battleshipReport', JSON.stringify(reportData));
+
+    // Mostra il bottone "NUOVO REPORT PRONTO"
+    const btnNewReport = document.getElementById('btn-new-report');
+    if(btnNewReport) {
+        btnNewReport.style.display = 'inline-block';
+    }
 }
 
 // ---------------- CONTROLLI ----------------
@@ -273,11 +292,12 @@ function startSimulation() {
     if (running) return;
     running = true;
     document.getElementById('sim-status').innerText = 'IN ESECUZIONE';
+    
+    // Nascondi report "nuovo" se riparte
+    const btnNewReport = document.getElementById('btn-new-report');
+    if(btnNewReport) btnNewReport.style.display = 'none';
+    
     logSim('Simulazione avviata.', 'all', 'info');
-
-    // blocchiamo subito la possibilità di cambiare la logica
-    setLogicLocked(true);
-
     runSimulationStep();
 }
 
@@ -286,9 +306,6 @@ function stopSimulation() {
     clearTimeout(simTimeout);
     document.getElementById('sim-status').innerText = 'FERMA';
     logSim('Simulazione fermata.', 'all', 'info');
-
-    // quando la simulazione si ferma (pausa/vittoria/reset), riabilitiamo la scelta della logica
-    setLogicLocked(false);
 }
 
 // ---------------- UI HOOKS ----------------
@@ -317,7 +334,6 @@ function updateCounts() {
     document.getElementById('countB').innerText = boardB.flat().filter(x => x === 1).length;
 }
 
-// ---------------- DOM READY ----------------
 document.addEventListener('DOMContentLoaded', () => {
     hookAiUi();
     resetSim();
