@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>BattleshipAI - Stress Test</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="scanline"></div>
+    <div class="container">
+        <header>
+            <h1 class="glitch" data-text="AI_STRESS_TEST">AI_STRESS_TEST</h1>
+            <p>Confronto statistico tra algoritmi su larga scala</p>
+        </header>
+
+        <div class="setup-controls" style="text-align:center; margin-bottom: 30px;">
+            <label>NUMERO DI SIMULAZIONI PER COPPIA:</label>
+            <input type="number" id="sim-count" value="10" min="1" max="1000" class="neon-select" style="width: 80px; text-align: center;">
+            <button class="btn-neon" id="start-mass-sim">AVVIA ELABORAZIONE</button>
+            <button class="btn-neon" onclick="window.location.href='index.html'" style="border-color: #ff0055; color: #ff0055;"> TORNA ALLA HOME</button>
+        </div>
+
+        <div id="progress-container" style="display:none; margin-bottom: 20px;">
+            <div style="margin-bottom: 10px;">PROCESSO: <span id="current-task">In attesa...</span></div>
+            <div style="width: 100%; background: #222; height: 10px; border: 1px solid #00f2ff;">
+                <div id="progress-bar" style="width: 0%; height: 100%; background: #00f2ff; transition: width 0.3s;"></div>
+            </div>
+        </div>
+
+        <div id="results-area" style="display:none;">
+            <canvas id="multiChart" style="max-height: 400px;"></canvas>
+            <div id="analysis-text" class="console-wrapper" style="width: 100%; margin-top: 20px; color: #fff; padding: 15px;">
+                </div>
+            <button class="btn-neon" onclick="window.location.reload()" style="margin-top:20px;">NUOVO TEST</button>
+            
+        </div>
+    </div>
+    <script src="js/multi_sim.js"></script>
+</body>
+</html>
