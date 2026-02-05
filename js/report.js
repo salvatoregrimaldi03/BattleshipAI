@@ -1,289 +1,264 @@
 // js/report.js
+// Report grafico con nuova visualizzazione LINE CHART per l'andamento
+
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Recupera dati da localStorage
-    const raw = localStorage.getItem('battleshipReport');
-    if (!raw) {
-        alert("Nessun report trovato in localStorage (chiave: 'battleshipReport'). Esegui prima una simulazione.");
+    // ---------------------------------------------------------
+    // 1. RECUPERO DATI
+    // ---------------------------------------------------------
+    const rawData = localStorage.getItem('battleshipReport');
+    
+    if (!rawData) {
+        alert("Nessun dato di battaglia trovato. Esegui prima una simulazione o una partita.");
         window.location.href = 'index.html';
         return;
     }
 
-    let data;
-    try {
-        data = JSON.parse(raw);
-    } catch (e) {
-        console.error("Errore parsing JSON report:", e);
-        alert("Dati report corrotti. Controlla la console.");
-        return;
+    const data = JSON.parse(rawData);
+    const isHvA = data.params && data.params.mode === 'HVA';
+
+    // ---------------------------------------------------------
+    // 2. POPOLAMENTO UI
+    // ---------------------------------------------------------
+    document.getElementById('report-date').innerText = `DATA: ${data.timestamp || new Date().toLocaleDateString()}`;
+    document.getElementById('total-turns').innerText = data.turns ?? 0;
+    
+    const winnerSpan = document.getElementById('winner-name');
+
+    let labelA = "AGENTE A";
+    let labelB = "AGENTE B";
+    let colorA = "#00f2ff"; 
+    let colorB = "#ff0055"; 
+
+    if (isHvA) {
+        labelA = "UTENTE";
+        labelB = data.params.iaDifficultyLabel || (data.stats.B && data.stats.B.algo) || 'IA';
+
+        if (data.winner === 'A') {
+            winnerSpan.innerText = labelA + " (VITTORIA)";
+            winnerSpan.style.color = colorA;
+        } else {
+            winnerSpan.innerText = "IA (VITTORIA)";
+            winnerSpan.style.color = colorB;
+        }
+    } else {
+        labelA = (data.stats && data.stats.A && data.stats.A.algo) ? data.stats.A.algo : 'IA_A';
+        labelB = (data.stats && data.stats.B && data.stats.B.algo) ? data.stats.B.algo : 'IA_B';
+        
+        const winner = data.winner || '?';
+        winnerSpan.innerText = (winner === 'A') ? `${labelA} HA VINTO` : `${labelB} HA VINTO`;
+        winnerSpan.style.color = (winner === 'A') ? colorA : colorB;
     }
 
-    // --- Elementi DOM richiesti (compatibilità con report.html)
-    const elDate = document.getElementById('report-date');
-    const elWinner = document.getElementById('winner-name');
-    const elAlgoA = document.getElementById('algo-a');
-    const elAlgoB = document.getElementById('algo-b');
-    const elAccA = document.getElementById('acc-a');
-    const elAccB = document.getElementById('acc-b');
-    const elTotalTurns = document.getElementById('total-turns');
+    document.getElementById('algo-a').innerText = labelA;
+    document.getElementById('algo-b').innerText = labelB;
 
-    const canvasA = document.getElementById('chartA');
-    const canvasB = document.getElementById('chartB');
-    const canvasC = document.getElementById('comparisonChart');
-
-    // --- Popola testi base
-    elDate && (elDate.innerText = `DATA: ${data.timestamp || new Date().toLocaleString()}`);
-    elTotalTurns && (elTotalTurns.innerText = (data.turns != null) ? data.turns : (data.log ? data.log.length : 0));
-
-    // Determina nomi/agenti
-    const isHvA = data.params && data.params.mode && String(data.params.mode).toUpperCase().includes('HVA');
-    const nameA = (data.stats && data.stats.A && data.stats.A.algo) ? data.stats.A.algo : (isHvA ? 'UTENTE' : 'AGENTE A');
-    const nameB = (data.stats && data.stats.B && data.stats.B.algo) ? data.stats.B.algo : (isHvA ? 'IA' : 'AGENTE B');
-
-    elAlgoA && (elAlgoA.innerText = nameA);
-    elAlgoB && (elAlgoB.innerText = nameB);
-
-    // Winner
-    const winner = data.winner || (data.result && data.result.winner) || null;
-    if (elWinner) {
-        if (winner === 'A' || winner === nameA) { elWinner.innerText = `${nameA} HA VINTO`; elWinner.style.color = '#00f2ff'; }
-        else if (winner === 'B' || winner === nameB) { elWinner.innerText = `${nameB} HA VINTO`; elWinner.style.color = '#ff0055'; }
-        else { elWinner.innerText = "NESSUN VINCITORE"; elWinner.style.color = '#ffffff'; }
-    }
-
-    // --- Statistiche: hits/misses (safe access)
-    function statOf(side) {
-        if (!data.stats || !data.stats[side]) return { hits: 0, misses: 0, total: 0 };
-        const s = data.stats[side];
-        const hits = Number(s.hits || 0);
-        const misses = Number(s.misses || 0);
+    const getStats = (statsObj) => {
+        const hits = (statsObj && statsObj.hits) ? Number(statsObj.hits) : 0;
+        const misses = (statsObj && statsObj.misses) ? Number(statsObj.misses) : 0;
         return { hits, misses, total: hits + misses };
-    }
-    const sA = statOf('A');
-    const sB = statOf('B');
-    const accPercent = (s) => (s.total > 0 ? ((s.hits / s.total) * 100).toFixed(1) : '0.0');
-    elAccA && (elAccA.innerText = `${accPercent(sA)}%`);
-    elAccB && (elAccB.innerText = `${accPercent(sB)}%`);
+    };
 
-    // --- Grafici Chart.js (disabilito animazioni per esport)
-    const commonOpts = { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: { enabled: false } } };
-    const colorA = '#00f2ff';
-    const colorB = '#ff0055';
+    const statsA = getStats(data.stats ? data.stats.A : null);
+    const statsB = getStats(data.stats ? data.stats.B : null);
 
-    try {
-        if (canvasA) {
-            new Chart(canvasA.getContext('2d'), {
-                type: 'doughnut',
-                data: { labels: ['Colpito','Acqua'], datasets: [{ data: [sA.hits, sA.misses], backgroundColor: [colorA, '#071517'], borderWidth: 1 }] },
-                options: { cutout: '70%', ...commonOpts }
-            });
+    const accA = statsA.total > 0 ? ((statsA.hits / statsA.total) * 100).toFixed(1) : '0.0';
+    const accB = statsB.total > 0 ? ((statsB.hits / statsB.total) * 100).toFixed(1) : '0.0';
+
+    document.getElementById('acc-a').innerText = `${accA}%`;
+    document.getElementById('acc-b').innerText = `${accB}%`;
+
+    // ---------------------------------------------------------
+    // 3. GENERAZIONE GRAFICI
+    // ---------------------------------------------------------
+    
+    const pieConfig = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: false } }
+    };
+
+    new Chart(document.getElementById('chartA'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Colpito', 'Acqua'],
+            datasets: [{
+                data: [statsA.hits, statsA.misses],
+                backgroundColor: [colorA, '#0b2326'],
+                borderColor: colorA,
+                borderWidth: 1
+            }]
+        },
+        options: { cutout: '70%', ...pieConfig }
+    });
+
+    new Chart(document.getElementById('chartB'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Colpito', 'Acqua'],
+            datasets: [{
+                data: [statsB.hits, statsB.misses],
+                backgroundColor: [colorB, '#330b15'],
+                borderColor: colorB,
+                borderWidth: 1
+            }]
+        },
+        options: { cutout: '70%', ...pieConfig }
+    });
+
+    // ---------------------------------------------------------
+    // 4. GRAFICO DI COMPARAZIONE (LINE CHART TIMELINE)
+    // ---------------------------------------------------------
+    
+    // Preparazione dati Timeline
+    const history = data.history || [];
+    const turns = data.turns || 0;
+    
+    // Creiamo array per i datapoint. 
+    // Usiamo lo scatter style o line style dove X è il turno e Y sono i colpi cumulativi.
+    
+    let datasetA = [];
+    let datasetB = [];
+    
+    let cumHitsA = 0;
+    let cumHitsB = 0;
+    
+    // Mappa per riempire i buchi se un turno non ha eventi per un giocatore
+    // Inizializziamo punto 0
+    datasetA.push({x: 0, y: 0});
+    datasetB.push({x: 0, y: 0});
+
+    // Iteriamo sulla storia
+    history.forEach(evt => {
+        if (evt.shooter === 'A') {
+            if (evt.isHit) cumHitsA++;
+            datasetA.push({ x: evt.turn, y: cumHitsA });
+        } else {
+            if (evt.isHit) cumHitsB++;
+            datasetB.push({ x: evt.turn, y: cumHitsB });
         }
-        if (canvasB) {
-            new Chart(canvasB.getContext('2d'), {
-                type: 'doughnut',
-                data: { labels: ['Colpito','Acqua'], datasets: [{ data: [sB.hits, sB.misses], backgroundColor: [colorB, '#2c0b10'], borderWidth: 1 }] },
-                options: { cutout: '70%', ...commonOpts }
-            });
-        }
-        if (canvasC) {
-            new Chart(canvasC.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: ['Colpi a Segno','Colpi a Vuoto'],
-                    datasets: [
-                        { label: nameA, data: [sA.hits, sA.misses], backgroundColor: 'rgba(0,242,255,0.6)', borderColor: colorA, borderWidth: 1 },
-                        { label: nameB, data: [sB.hits, sB.misses], backgroundColor: 'rgba(255,0,85,0.6)', borderColor: colorB, borderWidth: 1 }
-                    ]
+    });
+
+    // Aggiungi punto finale se necessario per pareggiare la lunghezza del grafico sull'asse X
+    datasetA.push({ x: turns, y: cumHitsA });
+    datasetB.push({ x: turns, y: cumHitsB });
+
+    new Chart(document.getElementById('comparisonChart'), {
+        type: 'line',
+        data: {
+            datasets: [
+                {
+                    label: labelA,
+                    data: datasetA,
+                    borderColor: colorA,
+                    backgroundColor: colorA,
+                    borderWidth: 2,
+                    tension: 0.1, // Linea leggermente tesa, non curva troppo
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    stepped: false
                 },
-                options: { animation: false, responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: true } } }
-            });
-        }
-    } catch (err) {
-        console.warn("Errore creazione grafici:", err);
-    }
-
-    // --- Helpers: converti canvas in immagine ad alta risoluzione
-    function canvasToImageDataURL(origCanvas, scale = 2) {
-        if (!origCanvas || !origCanvas.toDataURL) return null;
-        // dimensioni reali in pixel del canvas
-        const w = origCanvas.width;
-        const h = origCanvas.height;
-        const tmp = document.createElement('canvas');
-        // scale dinamico: più alto su schermi HiDPI
-        const deviceScale = Math.max(2, (window.devicePixelRatio || 1) * scale);
-        tmp.width = Math.max(1, Math.floor(w * deviceScale));
-        tmp.height = Math.max(1, Math.floor(h * deviceScale));
-        const tctx = tmp.getContext('2d');
-        // riempi sfondo (manteniamo scuro come UI: #050a10) -> utile per fedeltà visiva
-        tctx.fillStyle = '#050a10';
-        tctx.fillRect(0, 0, tmp.width, tmp.height);
-        tctx.drawImage(origCanvas, 0, 0, tmp.width, tmp.height);
-        return tmp.toDataURL('image/png', 1.0);
-    }
-
-    // --- Miglior resa: applica piccole modifiche inline al clone per il PDF
-    function polishCloneForPdf(cloneRoot) {
-        if (!cloneRoot) return;
-        // Evita che elementi vengano spezzati tra pagine
-        const statCards = cloneRoot.querySelectorAll('.stat-card');
-        statCards.forEach(el => {
-            el.style.pageBreakInside = 'avoid';
-            el.style.WebkitColumnBreakInside = 'avoid';
-            el.style.breakInside = 'avoid';
-        });
-        // Assicura il banner "WINNER" molto visibile
-        const banner = cloneRoot.querySelector('.winner-banner') || cloneRoot.querySelector('#winner-name');
-        if (banner) {
-            banner.style.boxSizing = 'border-box';
-            banner.style.padding = '14px';
-            banner.style.border = '2px solid rgba(255,255,255,0.06)';
-            banner.style.marginBottom = '10px';
-            banner.style.textAlign = 'center';
-        }
-        // Mantenere colori scuri in wrapper
-        cloneRoot.style.background = '#050a10';
-        cloneRoot.style.color = '#fff';
-    }
-
-    // --- Generazione PDF con html2pdf (download diretto) — senza prompt
-    async function generateHighResPdf() {
-        const btn = document.getElementById('download-pdf');
-        const originalText = btn ? btn.innerText : null;
-        if (btn) { btn.disabled = true; btn.innerText = 'GENERAZIONE...'; btn.style.opacity = '0.7'; }
-
-        try {
-            const element = document.getElementById('pdf-content');
-            if (!element) throw new Error("Elemento #pdf-content non trovato.");
-
-            // Clona l'elemento per non alterare il DOM visibile
-            const clone = element.cloneNode(true);
-
-            // Sostituisci i canvas all'interno del clone con immagini ad alta risoluzione prese dagli originali
-            const origCanvases = element.querySelectorAll('canvas');
-            const cloneCanvases = clone.querySelectorAll('canvas');
-
-            cloneCanvases.forEach((c, idx) => {
-                const parent = c.parentNode;
-                const orig = origCanvases[idx];
-                const dataUrl = canvasToImageDataURL(orig, 2.5); // alta qualità
-                if (dataUrl) {
-                    const img = document.createElement('img');
-                    img.src = dataUrl;
-                    img.alt = 'chart';
-                    img.style.display = 'block';
-                    img.style.margin = '12px auto';
-                    // mantieni le stesse dimensioni visive del canvas
-                    img.style.width = getComputedStyle(c).width || '100%';
-                    img.style.height = getComputedStyle(c).height || 'auto';
-                    parent.replaceChild(img, c);
-                } else {
-                    // se non disponibile, rimuovi il canvas
-                    c.remove();
+                {
+                    label: labelB,
+                    data: datasetB,
+                    borderColor: colorB,
+                    backgroundColor: colorB,
+                    borderWidth: 2,
+                    tension: 0.1,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    stepped: false
                 }
-            });
-
-            // Applica piccole migliorie al clone per il PDF
-            polishCloneForPdf(clone);
-
-            // Wrapper per html2pdf: manteniamo sfondo scuro così come appare in UI
-            const wrapper = document.createElement('div');
-            wrapper.style.background = '#050a10';
-            wrapper.style.padding = '8px';
-            wrapper.appendChild(clone);
-
-            // Opzioni per html2pdf — ottimizzate per fedeltà visiva
-            const opt = {
-                margin:       [10, 10, 10, 10], // mm (top,right,bottom,left)
-                filename:     `Mission_Report_${Date.now()}.pdf`,
-                image:        { type: 'jpeg', quality: 0.96 },
-                html2canvas:  {
-                    scale: Math.min(3, (window.devicePixelRatio || 1) * 2.0),
-                    useCORS: true,
-                    backgroundColor: '#050a10', // conserva sfondo scuro
-                    scrollY: 0
+            ]
+        },
+        options: {
+            animation: false, // Disabilita animazione per PDF sicuro
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { color: '#fff', font: { family: 'monospace' } }
                 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            // Esegui salvataggio diretto
-            await html2pdf().set(opt).from(wrapper).save();
-        } catch (err) {
-            console.error("Errore generazione PDF:", err);
-            alert("Errore durante la generazione del PDF. Controlla la console per dettagli.");
-        } finally {
-            if (btn) { btn.disabled = false; btn.innerText = originalText; btn.style.opacity = '1'; }
+                tooltip: {
+                    enabled: true, // ABILITA TOOLTIP INTERATTIVI
+                    backgroundColor: 'rgba(5, 10, 16, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#ccc',
+                    borderColor: '#fff',
+                    borderWidth: 1,
+                    displayColors: true,
+                    callbacks: {
+                        title: function(context) {
+                            return 'Turno: ' + context[0].parsed.x;
+                        },
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            label += context.parsed.y + ' Colpi a segno';
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    title: { display: true, text: 'TURNI DI GIOCO', color: '#666' },
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#888', font: { family: 'monospace' }, stepSize: 5 }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'NAVI COLPITE (Cumulativo)', color: '#666' },
+                    grid: { color: 'rgba(255,255,255,0.1)' },
+                    ticks: { color: '#888', font: { family: 'monospace' }, stepSize: 1 },
+                    suggestedMax: 17 // Max navi in battleship standard
+                }
+            }
         }
-    }
+    });
 
-    // --- Pulsante: scarica PDF DIRECT (nessun alert/confirm)
-    const dlBtn = document.getElementById('download-pdf');
-    if (dlBtn) {
-        dlBtn.addEventListener('click', async (ev) => {
-            // Clic normale: genera il PDF immagine ad alta fedeltà (layout visivo)
-            // Se serve un PDF con testo selezionabile, tieni premuto SHIFT mentre clicchi (feature secondaria)
-            if (ev.shiftKey) {
-                // Shift+click apre la finestra di stampa per "Salva come PDF" (testo selezionabile)
-                openPrintableWindow();
-            } else {
-                // Click normale: genera e scarica direttamente (nessun prompt)
-                await generateHighResPdf();
-            }
+    // ---------------------------------------------------------
+    // 5. DOWNLOAD PDF
+    // ---------------------------------------------------------
+    const downloadBtn = document.getElementById('download-pdf');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            const element = document.getElementById('pdf-content');
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `Mission_Report_${Date.now()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 3, 
+                    backgroundColor: '#050a10',
+                    useCORS: true,
+                    scrollY: 0,
+                    windowWidth: document.documentElement.offsetWidth
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            
+            const originalText = downloadBtn.innerText;
+            downloadBtn.innerText = "GENERAZIONE IN CORSO...";
+            downloadBtn.style.opacity = "0.7";
+            downloadBtn.disabled = true;
+            window.scrollTo(0,0);
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                downloadBtn.innerText = originalText;
+                downloadBtn.style.opacity = "1";
+                downloadBtn.disabled = false;
+            }).catch(err => {
+                console.error("Errore PDF:", err);
+                downloadBtn.innerText = "ERRORE";
+                setTimeout(() => downloadBtn.disabled = false, 3000);
+            });
         });
-        // piccolo aiuto UX: titolo del bottone
-        dlBtn.title = "Clic: scarica PDF (aspetto grafico). Shift+Clic: apri Stampa (testo selezionabile)";
     }
-
-    // --- Funzione per aprire la finestra di stampa (testo selezionabile) — usata solo con SHIFT+click
-    function openPrintableWindow() {
-        const content = document.getElementById('pdf-content');
-        if (!content) { alert("Elemento di report non trovato."); return; }
-        const clone = content.cloneNode(true);
-
-        // converti i canvas in immagini (per preservare grafici nella stampa)
-        const origCanvases = content.querySelectorAll('canvas');
-        const cloneCanvases = clone.querySelectorAll('canvas');
-        cloneCanvases.forEach((c, idx) => {
-            const parent = c.parentNode;
-            const orig = origCanvases[idx];
-            const dataUrl = canvasToImageDataURL(orig, 2);
-            if (dataUrl) {
-                const img = document.createElement('img');
-                img.src = dataUrl;
-                img.className = 'chart';
-                img.alt = 'chart';
-                img.style.width = '100%';
-                img.style.height = 'auto';
-                parent.replaceChild(img, c);
-            } else {
-                c.remove();
-            }
-        });
-
-        // setta tema per stampa leggibile (bianco)
-        clone.style.background = '#fff';
-        clone.style.color = '#000';
-
-        const styleForPrint = `
-            <style>
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 12mm; color:#000; background:#fff; }
-                .report-container { box-shadow: none !important; border: none !important; max-width: 780px; }
-                h1 { font-size: 18px; margin: 0 0 6px 0; }
-                h2 { font-size: 12px; margin: 8px 0 6px 0; }
-                .stat-card { border:1px solid #ddd; padding:8px; margin-bottom:10px; page-break-inside: avoid; }
-                .winner-banner { padding:8px; border:1px solid #ddd; background:#f5f5f5; margin-bottom:10px; text-transform:uppercase; }
-                .data-label { font-size:10px; color:#666; text-transform:uppercase; }
-                .data-val { font-weight:700; font-size:14px; }
-                img.chart { display:block; margin:8px 0; max-width:100%; height:auto; }
-                @page { size: A4; margin: 12mm; }
-            </style>
-        `;
-
-        const win = window.open('', '_blank', 'noopener,noreferrer');
-        if (!win) { alert("Pop-up bloccato: abilita popup e riprova."); return; }
-        win.document.open();
-        win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Mission Report - Stampa</title>${styleForPrint}</head><body>${clone.outerHTML}<script>window.onload=function(){setTimeout(()=>{window.print();},250);};</script></body></html>`);
-        win.document.close();
-        win.focus();
-    }
-
-    // Fine DOMContentLoaded
 });
