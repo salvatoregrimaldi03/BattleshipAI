@@ -2,38 +2,99 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>BattleshipAI - Stress Test</title>
+    <title>BattleshipAI - Stress Test Report</title>
     <link rel="stylesheet" href="css/style.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* CSS specifico per la generazione PDF della Multi-Sim */
+        
+        /* Classe per evitare che un elemento venga tagliato a metà tra le pagine */
+        .no-break {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* Stili per le immagini convertite dai grafici nel PDF */
+        .chart-pdf-img {
+            display: block;
+            width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        /* Nascondi elementi durante la generazione PDF */
+        .pdf-hidden {
+            display: none !important;
+        }
+
+        /* Quando stampiamo/generiamo PDF, forziamo i colori scuri */
+        @media print {
+            body {
+                background-color: #050a10 !important;
+                color: #fff !important;
+                /* Correzione: definisci entrambe le proprietà per massima compatibilità */
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="scanline"></div>
     <div class="container">
-        <header>
-            <h1 class="glitch" data-text="AI_STRESS_TEST">AI_STRESS_TEST</h1>
-            <p>Confronto statistico tra algoritmi su larga scala</p>
-        </header>
-
-        <div class="setup-controls" style="text-align:center; margin-bottom: 30px;">
+        
+        <div class="setup-controls" id="setup-area" style="text-align:center; margin-bottom: 30px;">
+            <header>
+                <h1 class="glitch" data-text="AI_STRESS_TEST">AI_STRESS_TEST</h1>
+                <p>Confronto statistico massivo tra algoritmi</p>
+            </header>
+            
             <label>NUMERO DI SIMULAZIONI PER COPPIA:</label>
-            <input type="number" id="sim-count" value="10" min="1" max="1000" class="neon-select" style="width: 80px; text-align: center;">
+            <input type="number" id="sim-count" value="50" min="1" max="1000" class="neon-select" style="width: 80px; text-align: center;">
+            <br><br>
             <button class="btn-neon" id="start-mass-sim">AVVIA ELABORAZIONE</button>
             <button class="btn-neon" onclick="window.location.href='index.html'" style="border-color: #ff0055; color: #ff0055;"> TORNA ALLA HOME</button>
         </div>
 
         <div id="progress-container" style="display:none; margin-bottom: 20px;">
-            <div style="margin-bottom: 10px;">PROCESSO: <span id="current-task">In attesa...</span></div>
-            <div style="width: 100%; background: #222; height: 10px; border: 1px solid #00f2ff;">
-                <div id="progress-bar" style="width: 0%; height: 100%; background: #00f2ff; transition: width 0.3s;"></div>
+            <div style="margin-bottom: 10px; font-family: monospace;">STATO: <span id="current-task" style="color:#00f2ff;">Inizializzazione...</span></div>
+            <div style="width: 100%; background: #111; height: 14px; border: 1px solid #00f2ff; box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);">
+                <div id="progress-bar" style="width: 0%; height: 100%; background: #00f2ff; transition: width 0.3s; box-shadow: 0 0 10px #00f2ff;"></div>
             </div>
         </div>
 
         <div id="results-area" style="display:none;">
-            <canvas id="multiChart" style="max-height: 400px;"></canvas>
-            <div id="analysis-text" class="console-wrapper" style="width: 100%; margin-top: 20px; color: #fff; padding: 15px;">
-                </div>
-            <button class="btn-neon" onclick="window.location.reload()" style="margin-top:20px;">NUOVO TEST</button>
             
+            <div id="pdf-export-area" style="padding: 10px;">
+                
+                <div style="text-align:center; margin-bottom: 30px; border-bottom: 2px solid #00f2ff; padding-bottom: 15px;">
+                    <h2 style="margin:0; color:#fff;">REPORT ANALITICO - STRESS TEST</h2>
+                    <p style="margin:5px 0 0 0; color:#aaa; font-size:0.9em;">Data: <span id="report-date">--/--/----</span></p>
+                </div>
+
+                <h3 style="color:#00f2ff; border-left:4px solid #ff0055; padding-left:10px;">1. TREND MEDIO SCONTRI</h3>
+                
+                <div id="charts-container" style="display: flex; flex-direction: column; gap: 30px; margin-bottom: 30px;">
+                    </div>
+
+                <div class="no-break">
+                    <h3 style="color:#00f2ff; border-left:4px solid #ff0055; padding-left:10px; margin-top: 40px;">2. STATISTICHE PERCENTUALI</h3>
+                    <div id="analysis-text" class="console-wrapper" style="width: 100%; margin-top: 20px; color: #fff; padding: 15px; max-width: none; background: rgba(255,255,255,0.03);">
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px; text-align: center; font-size: 0.8em; color: #666; border-top: 1px dashed #444; padding-top: 10px;">
+                    GENERATED BY BATTLESHIP AI TACTICAL SYSTEM
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 30px; margin-bottom: 50px;">
+                <button class="btn-neon" id="download-pdf-btn" style="border-color: #ffee00; color: #ffee00;">SCARICA REPORT PDF</button>
+                <button class="btn-neon" onclick="window.location.reload()">NUOVO TEST</button>
+                <button class="btn-neon" onclick="window.location.href='index.html'">TORNA ALLA HOME</button>
+            </div>
         </div>
     </div>
     <script src="js/multi_sim.js"></script>
