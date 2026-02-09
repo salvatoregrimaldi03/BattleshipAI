@@ -1,4 +1,5 @@
-// report.js — versione aggiornata per forzare PDF su 1 pagina
+// js/report.js — versione aggiornata per forzare PDF su 1 pagina
+
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const reportType = params.get('type'); // 'viewing', 'current', o null (default)
@@ -6,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let storageKey = 'battleshipReport';
     if (reportType === 'viewing') 
         storageKey = 'battleshipReport_viewing';
-    
     else if (reportType === 'current') 
         storageKey = 'battleshipReport_current';
 
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (accAel) accAel.innerText = `${accA}%`;
     if (accBel) accBel.innerText = `${accB}%`;
 
-    // Charts (Chart.js deve essere incluso nella pagina)
+    // Charts
     try {
         const pieConfig = { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } } };
 
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn('Chart rendering error:', e);
     }
 
-    // DOWNLOAD PDF
+    // DOWNLOAD PDF LOGIC
     const downloadBtn = document.getElementById('download-pdf');
     if (downloadBtn) {
         downloadBtn.addEventListener('click', async () => {
@@ -163,48 +163,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // parametri di pagina in mm (A4)
         const pageHeightMm = 297;
-        const pageWidthMm = 210;
-        // margini che useremo per html2pdf (top, right, bottom, left) in mm
-        const marginMm = 8; // usiamo 8mm per lato — compatto
+        const marginMm = 8;
         const printableHeightMm = pageHeightMm - (marginMm * 2);
 
-        // elementi da rimuovere temporaneamente (li salviamo per ripristino)
+        // elementi da rimuovere temporaneamente
         const removedNodes = [];
         const genNodes = Array.from(element.querySelectorAll('.generated-by, .footer-note'));
         genNodes.forEach(n => {
-            // sposta in array e poi rimuovi dal DOM
             removedNodes.push({ node: n, parent: n.parentNode, nextSibling: n.nextSibling });
             n.parentNode.removeChild(n);
         });
 
-        // nascondi elementi UI globali (classe .pdf-hidden definita in CSS)
+        // nascondi elementi UI
         const controls = Array.from(document.querySelectorAll('.scanline, .controls-area, .btn-neon, .btn-reset'));
         controls.forEach(el => el.classList.add('pdf-hidden'));
 
-        // SALVA e riduci temporaneamente le altezze dei chart per far sì che tutto entri in una pagina
+        // SALVA e riduci temporaneamente le altezze dei chart
         const chartContainers = Array.from(element.querySelectorAll('.chart-container'));
         const comparisonContainers = Array.from(element.querySelectorAll('.comparison-container'));
         const savedHeights = [];
 
-        chartContainers.forEach((c, i) => {
+        chartContainers.forEach((c) => {
             savedHeights.push({ el: c, height: c.style.height || '' });
-            c.style.height = '190px'; // più compatto
+            c.style.height = '190px'; 
         });
-        comparisonContainers.forEach((c, i) => {
+        comparisonContainers.forEach((c) => {
             savedHeights.push({ el: c, height: c.style.height || '' });
             c.style.height = '230px';
         });
 
-        // Forza max-height del contenuto in mm (usa unità mm per avere comportamento coerente con A4)
+        // Forza max-height del contenuto
         const originalMaxHeight = element.style.maxHeight || '';
         const originalOverflow = element.style.overflow || '';
         element.style.maxHeight = printableHeightMm + 'mm';
         element.style.overflow = 'hidden';
         element.style.boxSizing = 'border-box';
 
-        // converte canvas in immagini temporanee (per evitare artefatti)
+        // converte canvas in immagini temporanee
         const canvases = Array.from(element.querySelectorAll('canvas'));
-        const replacements = []; // { canvas, img, canvasDisplay }
+        const replacements = [];
         for (const canvas of canvases) {
             try {
                 const dataUrl = canvas.toDataURL('image/png', 1.0);
@@ -225,15 +222,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // attendi repaint
         await new Promise(res => setTimeout(res, 220));
 
-        // opzioni html2pdf — margin in mm coerente con @page CSS
+        // opzioni html2pdf
         const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,'-').replace('T','_');
         const filename = `Battleship_Mission_Report-${timestamp}.pdf`;
         const opt = {
-            margin: [marginMm, marginMm, marginMm, marginMm], // mm: top, right, bottom, left
+            margin: [marginMm, marginMm, marginMm, marginMm],
             filename,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
-                scale: Math.min(2, Math.max(1, window.devicePixelRatio || 1)), // qualità/peso
+                scale: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: '#050a10',
@@ -246,42 +243,32 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            // genera e salva
             await html2pdf().set(opt).from(element).save();
         } catch (err) {
             console.error('Errore generazione PDF:', err);
             throw err;
         } finally {
-            // ripristina canvas / immagini temporanee
+            // ripristina tutto
             replacements.forEach(r => {
                 try { r.img.remove(); } catch (e) {}
                 if (r.canvas) r.canvas.style.display = r.canvasDisplay || 'block';
             });
 
-            // ripristina altezze dei chart
             savedHeights.forEach(h => {
                 try { h.el.style.height = h.height; } catch (e) {}
             });
 
-            // ripristina maxHeight / overflow
             element.style.maxHeight = originalMaxHeight;
             element.style.overflow = originalOverflow;
 
-            // ripristina elementi rimossi
             removedNodes.forEach(r => {
                 try {
                     if (r.nextSibling) r.parent.insertBefore(r.node, r.nextSibling);
                     else r.parent.appendChild(r.node);
-                } catch (e) {
-                    // fallback: append
-                    try { r.parent.appendChild(r.node); } catch (e2) {}
-                }
+                } catch (e) {}
             });
 
-            // ripristina controlli visibilità
             controls.forEach(el => el.classList.remove('pdf-hidden'));
-
-            // ripristina scroll
             window.scrollTo(0, originalScroll);
         }
     }
