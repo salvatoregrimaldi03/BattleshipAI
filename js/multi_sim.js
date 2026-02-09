@@ -1,4 +1,4 @@
-// js/multi_sim.js - Versione Finale con Export PDF e Grafici Trend
+// js/multi_sim.js - Versione Finale con PDF Fix Colori e Statistiche
 
 const SIZE = 12;
 const SHIPS_CONFIG = [
@@ -27,10 +27,11 @@ document.getElementById('start-mass-sim').addEventListener('click', async () => 
 
     // Reset UI
     document.getElementById('start-mass-sim').disabled = true;
-    document.getElementById('setup-area').style.display = 'none'; // Nascondi setup per pulizia
+    document.getElementById('setup-area').style.display = 'none'; 
     document.getElementById('progress-container').style.display = 'block';
     document.getElementById('results-area').style.display = 'none';
     document.getElementById('charts-container').innerHTML = ''; 
+    document.getElementById('analysis-text').innerHTML = '';
     
     // Imposta data report
     document.getElementById('report-date').innerText = new Date().toLocaleString();
@@ -91,7 +92,7 @@ document.getElementById('start-mass-sim').addEventListener('click', async () => 
         }
     }
 
-    taskLabel.innerText = "COMPLETATO - Generazione Grafici...";
+    taskLabel.innerText = "COMPLETATO - Generazione Report...";
     progressBar.style.width = '100%';
     
     setTimeout(() => {
@@ -101,7 +102,26 @@ document.getElementById('start-mass-sim').addEventListener('click', async () => 
 });
 
 // --- EVENT LISTENER DOWNLOAD PDF ---
-document.getElementById('download-pdf-btn').addEventListener('click', downloadPdf);
+document.getElementById('download-pdf-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('download-pdf-btn');
+    const originalText = btn.innerText;
+    
+    btn.innerText = "GENERAZIONE PDF...";
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+
+    try {
+        const element = document.getElementById('pdf-export-area');
+        await generatePdfFromElement(element);
+    } catch (err) {
+        console.error("Errore PDF:", err);
+        alert("Errore generazione PDF.");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+    }
+});
 
 // --- LOGICA SIMULAZIONE ---
 function runSingleMatchWithTimeline(algoA, algoB) {
@@ -113,14 +133,14 @@ function runSingleMatchWithTimeline(algoA, algoB) {
 
     let hitsA = 0, hitsB = 0;
     let turns = 0;
-    let turn = 'A';
-
+    
     let triedA = new Set(), triedB = new Set();
     let stackA = [], stackB = [];
     
     let timelineA = [];
     let timelineB = [];
 
+    // Limite 200 turni
     while (hitsA < TOTAL_HITS_WIN && hitsB < TOTAL_HITS_WIN && turns < 200) {
         turns++; 
 
@@ -223,15 +243,17 @@ function updateTargetStack(stack, r, c, tried) {
     });
 }
 
-// --- VISUALIZZAZIONE ---
+// --- VISUALIZZAZIONE & GRAFICI ---
 function displayFinalAnalysis(results, count) {
     const resultsArea = document.getElementById('results-area');
     resultsArea.style.display = 'block';
     
+    // 1. Genera Grafici
+    renderAllCharts(results, count);
+
+    // 2. Genera Testo Statistico
     const textDiv = document.getElementById('analysis-text');
     let html = ``;
-
-    renderAllCharts(results, count);
 
     for (let key in results) {
         const r = results[key];
@@ -239,14 +261,27 @@ function displayFinalAnalysis(results, count) {
         const winPctA = ((r.aWins / count) * 100).toFixed(1);
         const winPctB = ((r.bWins / count) * 100).toFixed(1);
         
-        html += `<div style="margin-bottom:15px; padding:12px; border-left:4px solid #00f2ff; background:rgba(0,0,0,0.2); font-family: 'Courier New', monospace;">
-            <div style="font-size: 1.1em; margin-bottom: 5px;">
-                <span style="color:#00f2ff">${PRETTY_NAMES[r.algoA]}</span> vs <span style="color:#ff0055">${PRETTY_NAMES[r.algoB]}</span>
+        // Stile inline forte per garantire visibilità nel PDF
+        html += `
+        <div style="margin-bottom:15px; padding:15px; border-left:5px solid #00f2ff; background:#111; border-radius:4px; page-break-inside: avoid;">
+            <div style="font-size: 1.2em; margin-bottom: 8px; font-weight:bold; border-bottom:1px solid #333; padding-bottom:5px;">
+                <span style="color:#00f2ff">${PRETTY_NAMES[r.algoA]}</span> 
+                <span style="color:#fff; font-size:0.8em;">VS</span> 
+                <span style="color:#ff0055">${PRETTY_NAMES[r.algoB]}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.9em;">
-                <span>Vittorie BLU: <b style="color:#00f2ff">${winPctA}%</b></span>
-                <span>Vittorie ROSSO: <b style="color:#ff0055">${winPctB}%</b></span>
-                <span>Media Turni: <b style="color:#ffee00">${avgTurns}</b></span>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:1em;">
+                <div style="text-align:center;">
+                    <div style="color:#888; font-size:0.8em;">VITTORIE BLU</div>
+                    <div style="color:#00f2ff; font-weight:bold; font-size:1.4em;">${winPctA}%</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="color:#888; font-size:0.8em;">MEDIA TURNI</div>
+                    <div style="color:#ffee00; font-weight:bold; font-size:1.4em;">${avgTurns}</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="color:#888; font-size:0.8em;">VITTORIE ROSSO</div>
+                    <div style="color:#ff0055; font-weight:bold; font-size:1.4em;">${winPctB}%</div>
+                </div>
             </div>
         </div>`;
     }
@@ -259,10 +294,10 @@ function renderAllCharts(results, count) {
     for (let key in results) {
         const r = results[key];
         
-        // Wrapper con classe 'no-break' per il PDF
         const wrapper = document.createElement('div');
-        wrapper.className = 'no-break'; // Importante per html2pdf
-        wrapper.style.cssText = "position: relative; height: 300px; width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; background: rgba(0,0,0,0.5); border-radius: 6px;";
+        wrapper.className = 'multi-chart-wrapper no-break'; 
+        // Sfondo leggermente trasparente per lo schermo, ma solido per il PDF
+        wrapper.style.cssText = "position: relative; height: 300px; width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; background: rgba(0,0,0,0.5); border-radius: 6px; margin-bottom: 20px;";
         
         const canvas = document.createElement('canvas');
         canvas.id = `chart_${key}`;
@@ -311,10 +346,7 @@ function renderAllCharts(results, count) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
                     title: {
                         display: true,
@@ -327,13 +359,8 @@ function renderAllCharts(results, count) {
                         enabled: true,
                         backgroundColor: 'rgba(0,0,0,0.9)',
                         titleColor: '#fff',
-                        bodyColor: '#ccc',
                         borderColor: '#fff',
-                        borderWidth: 1,
-                        callbacks: {
-                            title: ctx => 'Turno: ' + ctx[0].parsed.x,
-                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} colpi`
-                        }
+                        borderWidth: 1
                     }
                 },
                 scales: {
@@ -354,70 +381,90 @@ function renderAllCharts(results, count) {
     }
 }
 
-// --- FUNZIONE GENERAZIONE PDF ---
-async function downloadPdf() {
-    const element = document.getElementById('pdf-export-area');
-    const btn = document.getElementById('download-pdf-btn');
+// --- FUNZIONE GENERAZIONE PDF CORRETTA ---
+async function generatePdfFromElement(element) {
+    if (!element) throw new Error("Elemento PDF non trovato");
+
+    // 1. Reset scroll per evitare immagini nere
+    const originalScroll = window.scrollY || 0;
+    window.scrollTo(0, 0);
+
+    // 2. Nascondi la scanline e i controlli
+    const scanline = document.querySelector('.scanline');
+    if (scanline) scanline.classList.add('pdf-hidden');
     
-    // Feedback Utente
-    const originalText = btn.innerText;
-    btn.innerText = "GENERAZIONE PDF...";
-    btn.disabled = true;
-    btn.style.opacity = 0.5;
+    const controls = Array.from(document.querySelectorAll('.btn-neon, .btn-reset, .setup-controls'));
+    controls.forEach(el => el.classList.add('pdf-hidden'));
 
-    // 1. Converti tutti i Canvas in Immagini (per evitare che il PDF li stampi neri o vuoti)
-    const canvases = element.querySelectorAll('canvas');
+    // 3. Ridimensiona i grafici per farli entrare nella pagina
+    const chartContainers = Array.from(element.querySelectorAll('.multi-chart-wrapper'));
+    const savedHeights = [];
+    chartContainers.forEach((c) => {
+        savedHeights.push({ el: c, height: c.style.height || '' });
+        c.style.height = '160px'; // Riduce altezza per PDF
+    });
+
+    // 4. Converti CANVAS in IMMAGINI (Cruciale per non avere grafici vuoti)
+    const canvases = Array.from(element.querySelectorAll('canvas'));
     const replacements = [];
-
-    canvases.forEach(canvas => {
+    for (const canvas of canvases) {
         try {
+            const dataUrl = canvas.toDataURL('image/png', 1.0);
             const img = document.createElement('img');
-            img.src = canvas.toDataURL('image/png'); // Qualità massima
-            img.className = 'chart-pdf-img'; 
+            img.className = 'chart-pdf-img';
+            img.src = dataUrl;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
             
-            // Sostituisci temporaneamente
             const parent = canvas.parentNode;
-            
-            // Nascondi canvas, mostra img
+            const displayStyle = canvas.style.display || '';
             canvas.style.display = 'none';
             parent.appendChild(img);
             
-            replacements.push({ canvas: canvas, img: img });
-        } catch(e) {
-            console.warn("Errore conversione canvas", e);
-        }
-    });
+            replacements.push({ canvas, img, displayStyle });
+        } catch (err) { console.warn(err); }
+    }
 
-    // 2. Opzioni html2pdf per A4
+    // Pausa tecnica per rendering DOM
+    await new Promise(res => setTimeout(res, 200));
+
+    // 5. Configurazione HTML2PDF per Dark Mode
+    const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,'-').replace('T','_');
+    const filename = `StressTest_Report-${timestamp}.pdf`;
+    
     const opt = {
-        margin:       [10, 10, 10, 10], // Margini in mm
-        filename:     `StressTest_Report_${Date.now()}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-            scale: 2, // Migliore risoluzione
-            useCORS: true, 
-            backgroundColor: '#050a10' // Forza sfondo scuro
+        margin: [8, 8, 8, 8],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#050a10', // Sfondo scuro FORZATO
+            scrollY: 0,
+            scrollX: 0
         },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        // IMPORTANTE: Gestione Page Break per non tagliare grafici
-        pagebreak:    { mode: ['css', 'legacy'] } 
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
     };
 
-    // 3. Genera
     try {
         await html2pdf().set(opt).from(element).save();
     } catch (err) {
         console.error(err);
-        alert("Errore generazione PDF");
+        alert("Errore PDF");
     } finally {
-        // 4. Ripristina stato originale
-        replacements.forEach(rep => {
-            rep.img.remove();
-            rep.canvas.style.display = 'block';
+        // 6. Ripristina tutto
+        replacements.forEach(r => {
+            r.img.remove();
+            r.canvas.style.display = r.displayStyle;
         });
-
-        btn.innerText = originalText;
-        btn.disabled = false;
-        btn.style.opacity = 1;
+        savedHeights.forEach(h => {
+            h.el.style.height = h.height;
+        });
+        if (scanline) scanline.classList.remove('pdf-hidden');
+        controls.forEach(el => el.classList.remove('pdf-hidden'));
+        window.scrollTo(0, originalScroll);
     }
 }
