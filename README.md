@@ -11,8 +11,9 @@
 
 
 ## Project Objective & Resources 💡
-**BattleshipAI** is a web-based simulation platform designed to analyze and compare artificial intelligence strategies within the context of the classic Battleship game. Facilitating both Human-vs-Agent and Agent-vs-Agent modes, the system automates the entire game flow—from board configuration to turn management—to evaluate autonomous decision-making behaviors and distinct attack algorithms in a controlled environment. The project focuses on data-driven performance analysis, collecting real-time match metrics to generate detailed statistical visualizations that highlight the efficiency of different AI strategies. Built with a modular and extensible architecture, BattleshipAI serves as a robust foundation for algorithmic study, allowing for the seamless integration of future strategies and advanced analytical tools.
+**BattleshipAI** is a web-based simulation platform designed to analyze and compare artificial intelligence strategies within the context of the classic Battleship game. Facilitating both Human-vs-Agent and Agent-vs-Agent modes, the system automates the entire game flow—from board configuration to turn management—to evaluate autonomous decision-making behaviors and distinct attack algorithms in a controlled environment. The project focuses on data-driven performance analysis, collecting real-time match metrics to generate detailed statistical visualizations that highlight the efficiency of different AI strategies. Built with a modular and extensible architecture, BattleshipAI serves as a robust foundation for algorithmic study, allowing for the seamless integration of future strategies and advanced analytical tools.        
 The repository resources include:
+
 **Core Game (Human vs. Agent)**
 - `index.html`: The main entry point of the application. It hosts the user interface for the Human vs. AI tactical command mode.
 - `script.js`: Contains the core game logic for the single-player mode, managing state, DOM interactions, and the decision-making process for the opponent AI.
