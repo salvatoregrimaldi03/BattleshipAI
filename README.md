@@ -1,4 +1,4 @@
-# LabirintoIA
+# BattleshipAI
 
 <p align="center"><img src='https://i.postimg.cc/tCfbZ5v4/Battle-Ship-Logo.png' alt="BattleshipAI Logo" height="400"></p>
 
@@ -11,12 +11,23 @@
 
 
 ## Project Objective & Resources 💡
-**LabirintoIA** is an interactive demo designed to analyze and visualize the performance of search algorithms within a deterministic, static grid environment. The project's primary objective is to benchmark uninformed strategies (BFS, DFS) against informed heuristics (A*, Recursive Best-First Search using Manhattan Distance) to demonstrate the efficiency of AI-driven pathfinding in minimizing node exploration and optimizing path costs. 
+**BattleshipAI** is a web-based simulation platform designed to analyze and compare artificial intelligence strategies within the context of the classic Battleship game. Facilitating both Human-vs-Agent and Agent-vs-Agent modes, the system automates the entire game flow—from board configuration to turn management—to evaluate autonomous decision-making behaviors and distinct attack algorithms in a controlled environment. The project focuses on data-driven performance analysis, collecting real-time match metrics to generate detailed statistical visualizations that highlight the efficiency of different AI strategies. Built with a modular and extensible architecture, BattleshipAI serves as a robust foundation for algorithmic study, allowing for the seamless integration of future strategies and advanced analytical tools.
 The repository resources include:
-- **index.html**: defines the interactive web interface structure;
-- **script.js**: manages the core logic and algorithm execution;
-- **style.css**: handles the visual styling of the demo;
-- **LogoLabirintoIA2.png**: representing the project's official logo.
+**Core Game (Human vs. Agent)**
+  - **index.html**: The main entry point of the application. It hosts the user interface for the Human vs. AI tactical command mode;
+  - **script.js**: Contains the core game logic for the single-player mode, managing state, DOM interactions, and the decision-making process for the opponent AI.
+**AI Simulation (Agent vs. Agent)**
+  - **ai_vs_ai.html**: A dedicated visualization interface for observing real-time matches between two autonomous AI agents;
+  - **ai_vs_ai.js**: Manages the automated game loop, turn synchronization, and real-time event logging for the AI vs. AI simulation mode.
+**Stress Testing & Mass Analysis**
+  - **multi_sim.html**: The dashboard for configuring and executing large-scale batch simulations (Stress Tests) to gather statistical data over hundreds of           matches;
+  - **multi_sim.js**: Handles the background processing of rapid match iterations, calculates aggregate win rates, computes average turn trends, and renders           comparative charts.
+**Reporting & Analytics**
+  - **report.html**: The structural template used to generate the detailed "Mission Report";
+  - **report.js**: The analytics engine that retrieves match data from LocalStorage, renders visualization graphs using Chart.js, and handles the PDF export via       html2pdf;
+  - **report.css**: A specialized stylesheet optimized for print media, ensuring high-contrast visibility and correct pagination when generating PDF reports.
+**Global Assets**
+  - **style.css**: The global stylesheet defining the application's "cyber-tactical" aesthetic, grid systems, animations, and responsive layout.
 
 ## 🚀 How to try it?
 1. Clone the repository:
