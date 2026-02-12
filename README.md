@@ -37,15 +37,15 @@ The repository resources include:
 ## 🚀 How to try it?
 1. Clone the repository:
    ```bash
-   git clone https://github.com/salvatoregrimaldi03/LabirintoIA.git
+   git clone https://github.com/salvatoregrimaldi03/BattleshipAI.git
    ```
-2. Go to the directory LabirintoIA:
+2. Go to the directory BattleshipAI:
    ```bash
-   cd LabirintoIA
+   cd BattleshipAI
    ```
-3. Starting Index.html with the command start:
+3. Starting index.html with the command start:
    ```bash
-   start Index.html
+   start index.html
    ```
 ## 🧱 Built With
 - [HTML](https://html.spec.whatwg.org/) – Markup language used to define the structure of the tactical interface and game grids.  
