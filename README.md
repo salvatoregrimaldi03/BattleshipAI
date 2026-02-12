@@ -1,6 +1,6 @@
 # LabirintoIA
 
-<p align="center"><img src='https://i.postimg.cc/xjbVPhTP/Logo-Labirinto-IA2.png' alt="LabirintoIA Logo" height="400"></p>
+<p align="center"><img src='https://i.postimg.cc/tCfbZ5v4/Battle-Ship-Logo.png' alt="BattleshipAI Logo" height="400"></p>
 
 
 ## Authors 🧑‍💻​🧑‍💻​
